@@ -1,16 +1,34 @@
 const userModel = require('../Models/User.model');
 const jwt = require('jsonwebtoken');
+const validator = require('validator');
+const bcrypt = require('bcrypt');
 
 const userController = {
     
     register: async(req,res)=>{
         try {
             const { email, fullname, password } = req.body;
+
+            if (!email || !fullname || !password) return res.status(400).json({ error: 'Please enter complete information' });
+
+            const existingUser = await userModel.findOne({ email: email });
+            if (existingUser) {
+                return res.status(400).json({ error: 'Email has already been registered' });
+            }
+
+            if (!validator.isEmail(email)) {
+                return res.status(400).json({ error: 'Invalid email address' });
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
+
             const newUser = new userModel({
                 email: email,
                 fullname: fullname,
-                password: password
+                password: hashedPassword
             });
+
             await newUser.save();
             res.status(201).json(newUser);
         } catch (error) {
@@ -23,12 +41,13 @@ const userController = {
             const { email, password } = req.body;
             const user = await userModel.findOne({ email });
             if(!user){
-                return res.status(404),json('Gmail not valid!');
+                return res.status(400).json('Gmail invalid!');
             }else{
-                if (user.password !== password) {
-                    return res.status(404).send('Wrong password!');
+                let truePassword = await bcrypt.compare(password,user.password);
+                if (!truePassword) {
+                    return res.status(400).json('Wrong password!');
                 }else{
-                    const token = jwt.sign({user: user}, process.env.SECRET_KEY);
+                    const token = jwt.sign({ user: user }, process.env.SECRET_KEY, { expiresIn: '2h'});
                     return res.status(200).json({ token });
                 }
             }
