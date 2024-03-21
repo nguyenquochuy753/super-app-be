@@ -2,6 +2,7 @@ const userModel = require('../Models/User.model');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const bcrypt = require('bcrypt');
+const { json } = require('express');
 
 const userController = {
     
@@ -39,6 +40,9 @@ const userController = {
     login: async(req,res)=>{
         try {
             const { email, password } = req.body;
+
+            if(!email || !password) return res.status(400).json({ error: 'Please enter complete information' });
+
             const user = await userModel.findOne({ email });
             if(!user){
                 return res.status(400).json('Gmail invalid!');
@@ -53,6 +57,20 @@ const userController = {
             }
         } catch (error) {
             return res.status(500).json(error);
+        }
+    },
+
+    getAllUsers: async(req,res)=>{
+        try {
+            const {userType} = req.user;
+            if(userType !== "admin"){
+                return res.status(403).json("You do not have permission to access this resource");
+            }else{
+                const users = await userModel.find({});
+                return res.status(200).json(users);
+            }
+        } catch (error) {
+            return res.status(500), json(error);
         }
     }
 
