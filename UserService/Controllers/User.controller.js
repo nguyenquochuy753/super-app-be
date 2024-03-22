@@ -72,6 +72,26 @@ const userController = {
         } catch (error) {
             return res.status(500), json(error);
         }
+    },
+
+    updateUser: async(req,res)=>{
+        try {
+            const { _id } = req.user;
+            const users = await userModel.findByIdAndUpdate(_id,req.body,{new: true});
+            return res.status(200).json(users);
+        } catch (error) {
+            return res.status(500), json(error);
+        }
+    },
+
+    deleteUser: async (req, res) => {
+        try {
+            const { _id } = req.user;
+            await userModel.findByIdAndDelete(_id);
+            return res.status(200).json("Deleted successfully");
+        } catch (error) {
+            return res.status(500), json(error);
+        }
     }
 
 }
