@@ -22,6 +22,9 @@ const userSchema = new mongoose.Schema({
     userType: {
         type: String,
         default: "client"
+    },
+    otp: {
+        type: String
     }
 
 },{timestamps: true});

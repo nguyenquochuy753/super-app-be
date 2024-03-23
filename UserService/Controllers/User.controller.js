@@ -92,6 +92,19 @@ const userController = {
         } catch (error) {
             return res.status(500), json(error);
         }
+    },
+
+    changePassword: async(req,res)=>{
+        try {
+            const { _id } = req.user;
+            const { newPassword } = req.body;
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(newPassword, salt);
+            await userModel.findByIdAndUpdate(_id, { password: hashedPassword }, { new: true });
+            res.status(200).json("Changed password successfully");
+        } catch (error) {
+            res.status(500).json(error);
+        }
     }
 
 }

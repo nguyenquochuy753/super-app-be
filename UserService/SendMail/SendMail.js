@@ -1,4 +1,6 @@
-var nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer');
+const userModel = require('../Models/User.model');
+const { trusted } = require('mongoose');
 
 var transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -12,7 +14,7 @@ var transporter = nodemailer.createTransport({
 
 const sendMail = async(req,res)=>{
 
-    let randomOTP = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
+    const randomOTP = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
 
     let htmlContent = `
         <html>
@@ -64,8 +66,18 @@ const sendMail = async(req,res)=>{
         }
     });
 
-    res.status(200).json('Please go to your email to get the otp code');
+    const updateOtpForUser = await userModel.findOne({ email : req.body.email });
 
+    if(updateOtpForUser){
+        updateOtpForUser.otp = randomOTP;
+        await updateOtpForUser.save();
+
+        res.status(200).json('Please go to your email to get the otp code');
+    }else{
+        res.status(400).json('Email is not registered');
+    }
+
+    
 }
 
 module.exports = sendMail;
