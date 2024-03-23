@@ -74,6 +74,10 @@ const userController = {
         }
     },
 
+    getUser: async(req,res)=> {
+        res.status(200).json(req.user);
+    },
+
     updateUser: async(req,res)=>{
         try {
             const { _id } = req.user;
