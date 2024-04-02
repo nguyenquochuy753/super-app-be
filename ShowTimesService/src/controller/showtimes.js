@@ -49,3 +49,34 @@ exports.getAllShowtimes = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
+exports.getShowtimesById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const showtimes = await Showtimes.findById(id);
+    let transformShowtimes;
+    const theater = await axios.get(
+      process.env.APT_THEATER + "/" + showtimes.theaterId.toString()
+    );
+    const movie = await axios.get(
+      process.env.APT_MOVIE + "/" + showtimes.movieId.toString()
+    );
+    transformShowtimes = {
+      _id: showtimes._id,
+      movieId: showtimes.movieId,
+      premiereDate: showtimes.premiereDate,
+      ticketPrice: showtimes.ticketPrice,
+      theaterName: theater.data.name,
+      theaterId: theater.data._id,
+      movieId: movie.data.movie._id,
+      movieName: movie.data.movie.name,
+      movieImage: movie.data.movie.image,
+      movieHot: movie.data.movie.hot,
+      movieNowShowing: movie.data.movie.nowShowing,
+      movieComingSoon: movie.data.movie.comingSoon,
+    };
+    res.status(201).json(transformShowtimes);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
