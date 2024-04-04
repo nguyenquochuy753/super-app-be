@@ -3,6 +3,30 @@ const slugify = require("slugify");
 const TheaterComplexModel = require("../Models/TheaterComplex.model");
 const axios = require("axios");
 
+const checkMovieExist = (listMovie, movieId) => {
+  // for (const movie of listMovie) {
+  //   if (movie.movieId == movieId) {
+  //     return true;
+  //   }
+  // }
+  // return false;
+  for (let i = 0; i < listMovie.length; i++) {
+    if (listMovie[i].movieId == movieId) {
+      return i;
+    }
+  }
+  return -1;
+};
+
+const checkTheaterExistMovie = (listTheater, theaterId) => {
+  for (const theater of listTheater) {
+    if (theater._id.toString() == theaterId) {
+      return true;
+    }
+  }
+  return false;
+};
+
 const cinemaSystemController = {
   addCinemaSystem: async (req, res) => {
     try {
@@ -67,25 +91,34 @@ const cinemaSystemController = {
       let cinema = await cinemaSystemModel.findById(_id);
       const theatercomplexes = await TheaterComplexModel.find({
         cinemaSystemId: _id,
-      });
+      }).populate("theaterList");
       const showtimes = await axios.get(process.env.SHOWTIMES_URL);
-      //   console.log("showtimes", showtimes.data);
 
       const lstTheaterComplexes = theatercomplexes.map((t) => {
-        const theaterList = t.theaterList.map((th) => th.toString());
-        // console.log("theaterList", theaterList);
         let listMovie = [];
         showtimes.data.map((show) => {
-          //   console.log(show);
-          if (theaterList.includes(show.theaterId)) {
-            listMovie.push({
-              movieId: show.movieId,
-              movieName: show.movieName,
-              movieImage: show.movieImage,
-              movieHot: show.movieHot,
-              movieNowShowing: show.movieNowShowing,
-              movieComingSoon: show.movieComingSoon,
-            });
+          if (checkTheaterExistMovie(t.theaterList, show.theaterId)) {
+            const checked = checkMovieExist(listMovie, show.movieId);
+            const newShow = {
+              showtimesId: show._id,
+              theaterId: show.theaterId,
+              theaterName: show.theaterName,
+              premiereDate: show.premiereDate,
+              ticketPrice: show.ticketPrice,
+            };
+            if (checked < 0) {
+              listMovie.push({
+                showtimesByMovie: [newShow],
+                movieId: show.movieId,
+                movieName: show.movieName,
+                movieImage: show.movieImage,
+                movieHot: show.movieHot,
+                movieNowShowing: show.movieNowShowing,
+                movieComingSoon: show.movieComingSoon,
+              });
+            } else {
+              listMovie[checked].showtimesByMovie.push(newShow);
+            }
           }
         });
         return {
@@ -99,6 +132,35 @@ const cinemaSystemController = {
       res.status(200).json({
         lstTheaterComplexes,
         cinema,
+      });
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  },
+
+  getShowtimesByMovie: async (req, res) => {
+    try {
+      const { _id } = req.params;
+      const movie = await axios.get(process.env.MOVIE_URL + "/" + _id);
+      // console.log(movie.data.movie);
+      const movieData = {
+        movieId: movie.data.movie._id,
+        movieName: movie.data.movie.name,
+        movieAlias: movie.data.movie.alias,
+        movieTrailer: movie.data.movie.trailer,
+        movieImage: movie.data.movie.image,
+        movieDescription: movie.data.movie.description,
+        movieGroup: movie.data.movie.group,
+        movieHot: movie.data.movie.hot,
+        movieNowShowing: movie.data.movie.nowShowing,
+        movieComingSoon: movie.data.movie.comingSoon,
+        movieOpeningDay: movie.data.movie.openingDay,
+        movieRating: movie.data.movie.rating
+      }
+      console.log(movie.data.movie);
+
+      res.status(200).json({
+        ...movieData
       });
     } catch (error) {
       res.status(500).json(error);
