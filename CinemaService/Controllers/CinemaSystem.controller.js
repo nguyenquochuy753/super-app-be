@@ -27,6 +27,27 @@ const checkTheaterExistMovie = (listTheater, theaterId) => {
   return false;
 };
 
+const checkListTheaterExistMovie = (listTheater, theaterId) => {
+  for (const lst of listTheater) {
+    for (const theater of lst.theaterList) {
+      console.log(theater.toString());
+      if (theater.toString() == theaterId) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+const checkTheaterExist = (listShowtimes, theaterId) => {
+  for(const show of listShowtimes){
+    if(show.theaterId.toString() == theaterId.toString()){
+      return true;
+    }
+  }
+  return false;
+}
+
 const cinemaSystemController = {
   addCinemaSystem: async (req, res) => {
     try {
@@ -142,7 +163,6 @@ const cinemaSystemController = {
     try {
       const { _id } = req.params;
       const movie = await axios.get(process.env.MOVIE_URL + "/" + _id);
-      // console.log(movie.data.movie);
       const movieData = {
         movieId: movie.data.movie._id,
         movieName: movie.data.movie.name,
@@ -155,12 +175,40 @@ const cinemaSystemController = {
         movieNowShowing: movie.data.movie.nowShowing,
         movieComingSoon: movie.data.movie.comingSoon,
         movieOpeningDay: movie.data.movie.openingDay,
-        movieRating: movie.data.movie.rating
+        movieRating: movie.data.movie.rating,
+      };
+      const cinemas = await cinemaSystemModel.find();
+      const showtimes = await axios.get(
+        process.env.SHOWTIMES_URL + "/movie/" + _id
+      );
+      // console.log(showtimes);
+      // console.log(cinemas);
+      const cinemaByMovie = [];
+      for (const cinema of cinemas) {
+        const theaterComplex = await TheaterComplexModel.find({
+          cinemaSystemId: cinema._id,
+        });
+        console.log(cinema.name);
+        for(const theaterList of theaterComplex){
+          // console.log(theaterList);
+          for(const theater of theaterList.theaterList){
+            console.log(theater);
+            if(checkTheaterExist(showtimes.data, theater)){
+              cinemaByMovie.push(cinema);
+            }
+          }
+        }
+        // for (const show of showtimes.data) {
+        //   if (checkListTheaterExistMovie(theaterComplex, show.theaterId)) {
+        //     console.log(cinema.name);
+        //     cinemaByMovie.push(cinema);
+        //   }
+        // }
       }
-      console.log(movie.data.movie);
 
       res.status(200).json({
-        ...movieData
+        cinemaByMovie,
+        ...movieData,
       });
     } catch (error) {
       res.status(500).json(error);
