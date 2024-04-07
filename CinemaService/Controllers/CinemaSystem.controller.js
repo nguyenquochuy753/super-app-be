@@ -4,12 +4,6 @@ const TheaterComplexModel = require("../Models/TheaterComplex.model");
 const axios = require("axios");
 
 const checkMovieExist = (listMovie, movieId) => {
-  // for (const movie of listMovie) {
-  //   if (movie.movieId == movieId) {
-  //     return true;
-  //   }
-  // }
-  // return false;
   for (let i = 0; i < listMovie.length; i++) {
     if (listMovie[i].movieId == movieId) {
       return i;
@@ -27,26 +21,47 @@ const checkTheaterExistMovie = (listTheater, theaterId) => {
   return false;
 };
 
-const checkListTheaterExistMovie = (listTheater, theaterId) => {
-  for (const lst of listTheater) {
-    for (const theater of lst.theaterList) {
-      console.log(theater.toString());
-      if (theater.toString() == theaterId) {
-        return true;
-      }
+const checkCinemaExist = (listCinema, cinemaId) => {
+  for (const cinema of listCinema) {
+    if (cinema._id.toString() == cinemaId.toString()) {
+      return true;
     }
   }
   return false;
 };
 
 const checkTheaterExist = (listShowtimes, theaterId) => {
-  for(const show of listShowtimes){
-    if(show.theaterId.toString() == theaterId.toString()){
+  for (const show of listShowtimes) {
+    if (show.theaterId.toString() == theaterId.toString()) {
+      return show;
+    }
+  }
+  return null;
+};
+
+const checkTheaterComplexExist = (listTheaterComplex, theaterComplexId) => {
+  for (const theaterComplex of listTheaterComplex) {
+    if (
+      theaterComplex.theaterComplexId.toString() == theaterComplexId.toString()
+    ) {
       return true;
     }
   }
   return false;
-}
+};
+const filterTheaterByShowtimes = (listTheater, showtimes) => {
+  const data = [];
+  for (const theater of listTheater) {
+    for (const show of showtimes) {
+      if (show.theaterId == theater._id) {
+        data.push(show);
+      }
+    }
+  }
+  return data;
+};
+
+// const filterTheater = (theaterList)
 
 const cinemaSystemController = {
   addCinemaSystem: async (req, res) => {
@@ -188,22 +203,52 @@ const cinemaSystemController = {
         const theaterComplex = await TheaterComplexModel.find({
           cinemaSystemId: cinema._id,
         });
-        console.log(cinema.name);
-        for(const theaterList of theaterComplex){
+        // console.log(cinema.name);
+        for (const theaterList of theaterComplex) {
           // console.log(theaterList);
-          for(const theater of theaterList.theaterList){
-            console.log(theater);
-            if(checkTheaterExist(showtimes.data, theater)){
-              cinemaByMovie.push(cinema);
+          for (const theater of theaterList.theaterList) {
+            const show = checkTheaterExist(showtimes.data, theater);
+            console.log(theaterList.name, theater, show);
+            if (show != null) {
+              if (!checkCinemaExist(cinemaByMovie, cinema._id)) {
+                // console.log(theaterList);
+                // console.log(theaterList.name, show);
+
+                cinemaByMovie.push({
+                  ...cinema.toObject(),
+                  theaterComplexByMovie: [
+                    {
+                      showtimes: filterTheaterByShowtimes(
+                        theaterList.theaterList,
+                        showtimes.data
+                      ),
+                      theaterComplexId: theaterList._id,
+                      theaterComplexName: theaterList.name,
+                      theaterComplexAddress: theaterList.address,
+                    },
+                  ],
+                });
+              } else if (
+                !checkTheaterComplexExist(
+                  cinemaByMovie[cinemaByMovie.length - 1].theaterComplexByMovie,
+                  theaterList._id
+                )
+              ) {
+                cinemaByMovie[
+                  cinemaByMovie.length - 1
+                ].theaterComplexByMovie.push({
+                  showtimes: filterTheaterByShowtimes(
+                    theaterList.theaterList,
+                    showtimes.data
+                  ),
+                  theaterComplexId: theaterList._id,
+                  theaterComplexName: theaterList.name,
+                  theaterComplexAddress: theaterList.address,
+                });
+              }
             }
           }
         }
-        // for (const show of showtimes.data) {
-        //   if (checkListTheaterExistMovie(theaterComplex, show.theaterId)) {
-        //     console.log(cinema.name);
-        //     cinemaByMovie.push(cinema);
-        //   }
-        // }
       }
 
       res.status(200).json({
