@@ -61,8 +61,6 @@ const filterTheaterByShowtimes = (listTheater, showtimes) => {
   return data;
 };
 
-// const filterTheater = (theaterList)
-
 const cinemaSystemController = {
   addCinemaSystem: async (req, res) => {
     try {
@@ -196,24 +194,17 @@ const cinemaSystemController = {
       const showtimes = await axios.get(
         process.env.SHOWTIMES_URL + "/movie/" + _id
       );
-      // console.log(showtimes);
-      // console.log(cinemas);
       const cinemaByMovie = [];
       for (const cinema of cinemas) {
         const theaterComplex = await TheaterComplexModel.find({
           cinemaSystemId: cinema._id,
         });
-        // console.log(cinema.name);
         for (const theaterList of theaterComplex) {
-          // console.log(theaterList);
           for (const theater of theaterList.theaterList) {
             const show = checkTheaterExist(showtimes.data, theater);
             console.log(theaterList.name, theater, show);
             if (show != null) {
               if (!checkCinemaExist(cinemaByMovie, cinema._id)) {
-                // console.log(theaterList);
-                // console.log(theaterList.name, show);
-
                 cinemaByMovie.push({
                   ...cinema.toObject(),
                   theaterComplexByMovie: [

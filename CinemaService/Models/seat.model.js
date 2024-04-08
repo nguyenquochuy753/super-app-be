@@ -6,17 +6,25 @@ const seatSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    logo: {
+    type: {
       type: String,
       required: true,
     },
-    aliases: {
+    isBook: {
+      type: Boolean,
+      default: false,
+    },
+    user: {
       type: String,
+    },
+    theaterId: {
+      type: mongoose.Schema.ObjectId,
       required: true,
+      ref: "Theater",
     },
   },
   { timestamps: true }
 );
 
-const seat = mongoose.model("seatSchema", seatSchema);
+const seat = mongoose.model("Seat", seatSchema);
 module.exports = seat;
