@@ -116,3 +116,60 @@ exports.getShowtimesByMovie = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
+exports.getShowtimesInfo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const showtimes = await Showtimes.findById(id);
+
+    const timestamp = showtimes.premiereDate;
+
+    const timestampYear = new Date(timestamp).getFullYear();
+    const timestampMonth = new Date(timestamp).getUTCMonth() + 1;
+    const timestampDay = new Date(timestamp).getUTCDate();
+    const premiereDate = `${
+      timestampMonth < 10 ? "0" + timestampMonth : timestampMonth
+    }/${
+      timestampDay < 10 ? "0" + timestampDay : timestampDay
+    }/${timestampYear}`;
+
+    const timestampHours = new Date(timestamp).getUTCHours();
+    const timestampMinutes = new Date(timestamp).getUTCMinutes();
+    const premiereTime = `${
+      timestampHours < 10 ? "0" + timestampHours : timestampHours
+    }:${timestampMinutes < 10 ? "0" + timestampMinutes : timestampMinutes}`;
+
+    const theater = await axios.get(
+      process.env.APT_THEATER + "/" + showtimes.theaterId.toString()
+    );
+
+    const theaterComplex = await axios.get(
+      process.env.APT_THEATER_COMPLEX +
+        "/theater/" +
+        showtimes.theaterId.toString()
+    );
+
+    const movie = await axios.get(
+      process.env.APT_MOVIE + "/" + showtimes.movieId.toString()
+    );
+
+    const seats = await axios.get(
+      process.env.APT_SEAT + "/theater/" + showtimes.theaterId.toString()
+    );
+
+    const infoMovie = {
+      showtimesId: showtimes._id,
+      theaterComplexName: theaterComplex.data.name,
+      theaterName: theater.data.name,
+      address: theaterComplex.data.address,
+      movieName: movie.data.movie.name,
+      movieImage: movie.data.movie.image,
+      premiereDate: premiereDate,
+      premiereTime: premiereTime,
+    };
+
+    res.status(201).json({ infoMovie: infoMovie, listSeat: seats.data });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};

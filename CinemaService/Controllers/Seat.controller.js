@@ -47,6 +47,17 @@ const seatController = {
       res.status(500).json(error);
     }
   },
+  getSeatByTheaterId: async (req, res) => {
+    try {
+      const { _id } = req.params;
+      const seats = await seatModel
+        .find({ theaterId: _id })
+        .populate("theaterId");
+      res.status(200).json(seats);
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  },
 };
 
 module.exports = seatController;
