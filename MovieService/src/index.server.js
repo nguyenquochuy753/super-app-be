@@ -8,6 +8,7 @@ const server = http.createServer(app);
 
 app.use(cors());
 const moviesRoutes = require("./routes/movie");
+const bannerRoutes = require("./routes/banner");
 
 env.config();
 
@@ -21,6 +22,7 @@ mongoose
 
 app.use(express.json());
 app.use("/api", moviesRoutes);
+app.use("/api/banner", bannerRoutes);
 
 server.listen(process.env.PORT, () => {
   console.log(`Server is running on port ${process.env.PORT}`);
