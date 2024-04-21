@@ -1,14 +1,13 @@
 const Ticket = require("../models/ticket");
+const axios = require("axios");
 
 exports.createTicket = async (req, res) => {
   try {
-    const { user, showtimeId, seatId, bookingDate, ticketPrice } = req.body;
+    const { user, showtimeId, seatId } = req.body;
     const newTicket = new Ticket({
       user: user,
       showtimeId: showtimeId,
       seatId: seatId,
-      bookingDate: bookingDate,
-      ticketPrice: ticketPrice,
     });
     await newTicket.save();
     res.status(201).json(newTicket);
@@ -60,7 +59,40 @@ exports.getTicketByUser = async (req, res) => {
   try {
     const { _id } = req.params;
     const tickets = await Ticket.find({ user: _id });
-    res.status(200).json(tickets);
+    const user = await axios.get(process.env.API_USER + "/" + _id);
+    const ticketInfo = [];
+    for (const ticket of tickets) {
+      const showtime = await axios.get(
+        process.env.SHOWTIMES_URL + "/" + ticket.showtimeId
+      );
+      const listSeat = [];
+      for (const seat of ticket.seatId) {
+        const item = await axios.get(process.env.API_SEAT + "/info/" + seat);
+        listSeat.push({
+          cinemaId: item.data.theaterComplex.cinemaSystemId,
+          theaterComplexName: item.data.theaterComplex.name,
+          theaterId: item.data.seat.theaterId._id,
+          theaterName: item.data.seat.theaterId.name,
+          seatId: item.data.seat._id,
+          seatName: item.data.seat.name,
+        });
+      }
+      ticketInfo.push({
+        ticketId: ticket._id,
+        bookingDate: ticket.createdAt,
+        movieName: showtime.data.movieName,
+        movieImage: showtime.data.movieImage,
+        price: showtime.data.ticketPrice,
+        movieDuration: 120,
+        listSeat: listSeat,
+      });
+    }
+    res.status(200).json({
+      fullname: user.data.fullname,
+      email: user.data.email,
+      userType: user.data.userType,
+      tikcetInfo: ticketInfo,
+    });
   } catch (error) {
     res.status(500).json(error);
   }

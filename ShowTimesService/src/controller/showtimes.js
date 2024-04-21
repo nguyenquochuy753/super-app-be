@@ -157,6 +157,12 @@ exports.getShowtimesInfo = async (req, res) => {
       process.env.APT_SEAT + "/theater/" + showtimes.theaterId.toString()
     );
 
+    const seatsByShowtimes = seats.data.map((seat) => ({
+      ...seat,
+      price:
+        seat.type == "Vip" ? showtimes.ticketPrice * 2 : showtimes.ticketPrice,
+    }));
+
     const infoMovie = {
       showtimesId: showtimes._id,
       theaterComplexName: theaterComplex.data.name,
@@ -168,7 +174,7 @@ exports.getShowtimesInfo = async (req, res) => {
       premiereTime: premiereTime,
     };
 
-    res.status(201).json({ infoMovie: infoMovie, listSeat: seats.data });
+    res.status(201).json({ infoMovie: infoMovie, listSeat: seatsByShowtimes });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

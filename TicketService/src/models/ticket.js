@@ -10,16 +10,7 @@ const ticketSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    seatId: {
-      type: String,
-      required: true,
-    },
-    bookingDate: {
-      type: Date,
-    },
-    ticketPrice: {
-      type: Number,
-    },
+    seatId: [],
   },
   { timestamps: true }
 );
