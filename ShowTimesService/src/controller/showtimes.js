@@ -10,6 +10,7 @@ exports.createShowtimes = async (req, res) => {
       movieId,
       premiereDate,
       ticketPrice,
+      isDone: false,
     });
     const savedShowtimes = await showtimes.save();
     res.status(201).json({ showtimes: savedShowtimes });
@@ -34,6 +35,7 @@ exports.getAllShowtimes = async (req, res) => {
         movieId: show.movieId,
         premiereDate: show.premiereDate,
         ticketPrice: show.ticketPrice,
+        isDone: show.isDone,
         theaterName: theater.data.name,
         theaterId: theater.data._id,
         movieId: movie.data.movie._id,
@@ -66,6 +68,7 @@ exports.getShowtimesById = async (req, res) => {
       movieId: showtimes.movieId,
       premiereDate: showtimes.premiereDate,
       ticketPrice: showtimes.ticketPrice,
+      isDone: showtimes.isDone,
       theaterName: theater.data.name,
       theaterId: theater.data._id,
       movieId: movie.data.movie._id,
@@ -100,6 +103,7 @@ exports.getShowtimesByMovie = async (req, res) => {
         movieId: show.movieId,
         premiereDate: show.premiereDate,
         ticketPrice: show.ticketPrice,
+        isDone: show.isDone,
         theaterName: theater.data.name,
         theaterId: theater.data._id,
         movieId: movie.data.movie._id,
@@ -127,10 +131,16 @@ exports.getShowtimesInfo = async (req, res) => {
     const timestampYear = new Date(timestamp).getFullYear();
     const timestampMonth = new Date(timestamp).getUTCMonth() + 1;
     const timestampDay = new Date(timestamp).getUTCDate();
+    // const premiereDate = `${
+    //   timestampMonth < 10 ? "0" + timestampMonth : timestampMonth
+    // }/${
+    //   timestampDay < 10 ? "0" + timestampDay : timestampDay
+    // }/${timestampYear}`;
+
     const premiereDate = `${
-      timestampMonth < 10 ? "0" + timestampMonth : timestampMonth
-    }/${
       timestampDay < 10 ? "0" + timestampDay : timestampDay
+    }/${
+      timestampMonth < 10 ? "0" + timestampMonth : timestampMonth
     }/${timestampYear}`;
 
     const timestampHours = new Date(timestamp).getUTCHours();
@@ -177,5 +187,22 @@ exports.getShowtimesInfo = async (req, res) => {
     res.status(201).json({ infoMovie: infoMovie, listSeat: seatsByShowtimes });
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+};
+
+exports.updateShowtime = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const showtime = await Showtimes.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
+    if (showtime.isDone == true) {
+      await axios.post(process.env.APT_SEAT + "/done", {
+        theaterId: showtime.theaterId,
+      });
+    }
+    res.status(200).json("Showtime updated successfully");
+  } catch (error) {
+    res.status(400).json(error);
   }
 };

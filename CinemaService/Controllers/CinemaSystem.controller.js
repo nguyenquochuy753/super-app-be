@@ -139,6 +139,7 @@ const cinemaSystemController = {
               theaterName: show.theaterName,
               premiereDate: show.premiereDate,
               ticketPrice: show.ticketPrice,
+              isDone: show.isDone,
             };
             if (checked < 0) {
               listMovie.push({

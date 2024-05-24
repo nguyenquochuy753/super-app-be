@@ -16,6 +16,10 @@ const showtimesSchema = new mongoose.Schema(
     ticketPrice: {
       type: Number,
     },
+    isDone: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
