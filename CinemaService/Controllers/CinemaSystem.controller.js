@@ -254,6 +254,87 @@ const cinemaSystemController = {
     }
   },
 
+  getShowtimesByMovieClient: async (req, res) => {
+    try {
+      const { _id } = req.params;
+      const movie = await axios.get(process.env.MOVIE_URL + "/" + _id);
+      const movieData = {
+        movieId: movie.data.movie._id,
+        movieName: movie.data.movie.name,
+        movieAlias: movie.data.movie.alias,
+        movieTrailer: movie.data.movie.trailer,
+        movieImage: movie.data.movie.image,
+        movieDescription: movie.data.movie.description,
+        movieGroup: movie.data.movie.group,
+        movieHot: movie.data.movie.hot,
+        movieNowShowing: movie.data.movie.nowShowing,
+        movieComingSoon: movie.data.movie.comingSoon,
+        movieOpeningDay: movie.data.movie.openingDay,
+        movieRating: movie.data.movie.rating,
+      };
+      const cinemas = await cinemaSystemModel.find();
+      const showtimes = await axios.get(
+        process.env.SHOWTIMES_URL + "/movieclient/" + _id
+      );
+      const cinemaByMovie = [];
+      for (const cinema of cinemas) {
+        const theaterComplex = await TheaterComplexModel.find({
+          cinemaSystemId: cinema._id,
+        });
+        for (const theaterList of theaterComplex) {
+          for (const theater of theaterList.theaterList) {
+            const show = checkTheaterExist(showtimes.data, theater);
+            console.log(theaterList.name, theater, show);
+            if (show != null) {
+              if (!checkCinemaExist(cinemaByMovie, cinema._id)) {
+                cinemaByMovie.push({
+                  ...cinema.toObject(),
+                  theaterComplexByMovie: [
+                    {
+                      showtimes: filterTheaterByShowtimes(
+                        theaterList.theaterList,
+                        showtimes.data
+                      ),
+                      theaterComplexId: theaterList._id,
+                      theaterComplexName: theaterList.name,
+                      theaterComplexAddress: theaterList.address,
+                      theaterComplexImage: theaterList.image,
+                    },
+                  ],
+                });
+              } else if (
+                !checkTheaterComplexExist(
+                  cinemaByMovie[cinemaByMovie.length - 1].theaterComplexByMovie,
+                  theaterList._id
+                )
+              ) {
+                cinemaByMovie[
+                  cinemaByMovie.length - 1
+                ].theaterComplexByMovie.push({
+                  showtimes: filterTheaterByShowtimes(
+                    theaterList.theaterList,
+                    showtimes.data
+                  ),
+                  theaterComplexId: theaterList._id,
+                  theaterComplexName: theaterList.name,
+                  theaterComplexAddress: theaterList.address,
+                  theaterComplexImage: theaterList.image,
+                });
+              }
+            }
+          }
+        }
+      }
+
+      res.status(200).json({
+        cinemaByMovie,
+        ...movieData,
+      });
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  },
+
   getAllCinemaSystemAndTheaterComplex: async (req, res) => {
     try {
       const cinemaSystems = await cinemaSystemModel.find({});
@@ -264,6 +345,69 @@ const cinemaSystemController = {
           cinemaSystemId: cinema._id.toString(),
         }).populate("theaterList");
         const showtimes = await axios.get(process.env.SHOWTIMES_URL);
+        for (let i = 0; i < listTheaterComplex.length; i++) {
+          let listMovie = [];
+          showtimes.data.map((show) => {
+            if (
+              checkTheaterExistMovie(
+                listTheaterComplex[i].theaterList,
+                show.theaterId
+              )
+            ) {
+              const checked = checkMovieExist(listMovie, show.movieId);
+              const newShow = {
+                showtimesId: show._id,
+                theaterId: show.theaterId,
+                theaterName: show.theaterName,
+                premiereDate: show.premiereDate,
+                ticketPrice: show.ticketPrice,
+              };
+              if (checked < 0) {
+                listMovie.push({
+                  showtimesByMovie: [newShow],
+                  movieId: show.movieId,
+                  movieName: show.movieName,
+                  movieImage: show.movieImage,
+                  movieHot: show.movieHot,
+                  movieNowShowing: show.movieNowShowing,
+                  movieComingSoon: show.movieComingSoon,
+                });
+              } else {
+                listMovie[checked].showtimesByMovie.push(newShow);
+              }
+            }
+          });
+          listTheaterComplex[i].listMovie = listMovie;
+          data.push({
+            listMovie: listMovie,
+            theaterComplexId: listTheaterComplex[i]._id,
+            theaterComplexName: listTheaterComplex[i].name,
+            theaterComplexAddress: listTheaterComplex[i].address,
+          });
+        }
+        cinemas.push({
+          logo: cinema.logo,
+          listTheaterComplex: data,
+          _id: cinema._id,
+          name: cinema.name,
+        });
+      }
+      res.status(200).json(cinemas);
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  },
+  getAllCinemaSystemAndTheaterComplexClient: async (req, res) => {
+    try {
+      const cinemaSystems = await cinemaSystemModel.find({});
+      const cinemas = [];
+      for (const cinema of cinemaSystems) {
+        const data = [];
+        let listTheaterComplex = await TheaterComplexModel.find({
+          cinemaSystemId: cinema._id.toString(),
+        }).populate("theaterList");
+        const showtimes = await axios.get(process.env.SHOWTIMES_URL + "client");
+        console.log(process.env.SHOWTIMES_URL + "client", showtimes);
         for (let i = 0; i < listTheaterComplex.length; i++) {
           let listMovie = [];
           showtimes.data.map((show) => {

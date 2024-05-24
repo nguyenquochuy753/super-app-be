@@ -52,6 +52,42 @@ exports.getAllShowtimes = async (req, res) => {
   }
 };
 
+exports.getAllShowtimesClient = async (req, res) => {
+  try {
+    const showtimes = await Showtimes.find({});
+    const transformShowtimes = [];
+    for (const show of showtimes) {
+      if (show.isDone == true) {
+        continue;
+      }
+      const theater = await axios.get(
+        process.env.APT_THEATER + "/" + show.theaterId.toString()
+      );
+      const movie = await axios.get(
+        process.env.APT_MOVIE + "/" + show.movieId.toString()
+      );
+      transformShowtimes.push({
+        _id: show._id,
+        movieId: show.movieId,
+        premiereDate: show.premiereDate,
+        ticketPrice: show.ticketPrice,
+        isDone: show.isDone,
+        theaterName: theater.data.name,
+        theaterId: theater.data._id,
+        movieId: movie.data.movie._id,
+        movieName: movie.data.movie.name,
+        movieImage: movie.data.movie.image,
+        movieHot: movie.data.movie.hot,
+        movieNowShowing: movie.data.movie.nowShowing,
+        movieComingSoon: movie.data.movie.comingSoon,
+      });
+    }
+    res.status(201).json(transformShowtimes);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 exports.getShowtimesById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -91,6 +127,46 @@ exports.getShowtimesByMovie = async (req, res) => {
     console.log(showtimes);
     const showtimesData = [];
     for (const show of showtimes) {
+      let transformShowtimes;
+      const theater = await axios.get(
+        process.env.APT_THEATER + "/" + show.theaterId.toString()
+      );
+      const movie = await axios.get(
+        process.env.APT_MOVIE + "/" + show.movieId.toString()
+      );
+      transformShowtimes = {
+        _id: show._id,
+        movieId: show.movieId,
+        premiereDate: show.premiereDate,
+        ticketPrice: show.ticketPrice,
+        isDone: show.isDone,
+        theaterName: theater.data.name,
+        theaterId: theater.data._id,
+        movieId: movie.data.movie._id,
+        movieName: movie.data.movie.name,
+        movieImage: movie.data.movie.image,
+        movieHot: movie.data.movie.hot,
+        movieNowShowing: movie.data.movie.nowShowing,
+        movieComingSoon: movie.data.movie.comingSoon,
+      };
+      showtimesData.push(transformShowtimes);
+    }
+    res.status(201).json(showtimesData);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+exports.getShowtimesByMovieClient = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const showtimes = await Showtimes.find({ movieId: id });
+    console.log("Client", showtimes);
+    const showtimesData = [];
+    for (const show of showtimes) {
+      if (show.isDone == true) {
+        continue;
+      }
       let transformShowtimes;
       const theater = await axios.get(
         process.env.APT_THEATER + "/" + show.theaterId.toString()
