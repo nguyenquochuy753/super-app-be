@@ -1,5 +1,9 @@
 const Movie = require("../models/movie");
 const slugify = require("slugify");
+const MovieClass = require("../movieClass");
+const ClassFactory = require("../../../Factory");
+
+const movieFactory = ClassFactory.createMovieClass();
 
 exports.createMovie = async (req, res) => {
   try {
@@ -40,7 +44,9 @@ exports.createMovie = async (req, res) => {
 
 exports.getAllMovies = async (req, res) => {
   try {
-    const movies = await Movie.find({});
+    // const movieClass = new MovieClass();
+    const movies = await movieFactory.getAll();
+    // const movies = await Movie.find({});
     res.status(201).json(movies);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -100,7 +106,9 @@ exports.getMoviesByDay = async (req, res) => {
 exports.getMoviesById = async (req, res) => {
   try {
     const { id } = req.params;
-    const movie = await Movie.findOne({ _id: id });
+    // const movieClass = new MovieClass();
+    const movie = await movieFactory.getByID(id);
+    // const movie = await Movie.findOne({ _id: id });
     res.status(200).json({ movie });
   } catch (error) {
     res.status(404).json({ message: "Movie not found" });
